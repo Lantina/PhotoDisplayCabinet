@@ -1,0 +1,65 @@
+version: '3.8'
+
+services:
+  mysql:
+    image: mysql:8.0
+    container_name: pdcabinet-mysql
+    environment:
+      MYSQL_ROOT_PASSWORD: ${MYSQL_ROOT_PASSWORD:-pdcabinet123}
+      MYSQL_DATABASE: ${DB_NAME:-pdcabinet}
+      MYSQL_USER: ${DB_USER:-pdcabinet}
+      MYSQL_PASSWORD: ${DB_PASSWORD:-pdcabinet123}
+    ports:
+      - "${DB_PORT:-3306}:3306"
+    volumes:
+      - mysql_data:/var/lib/mysql
+      - ./server/init.sql:/docker-entrypoint-initdb.d/init.sql
+    networks:
+      - pdcabinet-network
+    restart: unless-stopped
+
+  server:
+    build: ./server
+    container_name: pdcabinet-server
+    depends_on:
+      - mysql
+    ports:
+      - "${SERVER_PORT:-4000}:4000"
+    environment:
+      - NODE_ENV=production
+      - DB_HOST=mysql
+      - DB_PORT=3306
+      - DB_USER=${DB_USER:-pdcabinet}
+      - DB_PASSWORD=${DB_PASSWORD:-pdcabinet123}
+      - DB_NAME=${DB_NAME:-pdcabinet}
+      - ADMIN_USERNAME=${ADMIN_USERNAME:-admin}
+      - ADMIN_PASSWORD=${ADMIN_PASSWORD:-admin123}
+      - JWT_SECRET=${JWT_SECRET:-your-super-secret-jwt-key}
+      - CORS_ORIGIN=${CORS_ORIGIN:-http://localhost:5173}
+    volumes:
+      - ./server/uploads:/app/uploads
+      - ./server/logs:/app/logs
+    networks:
+      - pdcabinet-network
+    restart: unless-stopped
+
+  client:
+    build: ./client
+    container_name: pdcabinet-client
+    depends_on:
+      - server
+    ports:
+      - "${CLIENT_PORT:-80}:80"
+    environment:
+      - VITE_API_BASE=${VITE_API_BASE:-http://localhost:4000/api}
+      - VITE_ASSET_BASE=${VITE_ASSET_BASE:-http://localhost:4000}
+    networks:
+      - pdcabinet-network
+    restart: unless-stopped
+
+volumes:
+  mysql_data:
+
+networks:
+  pdcabinet-network:
+    driver: bridge

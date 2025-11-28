@@ -31,16 +31,18 @@ const handleSelect = (index) => {
 </script>
 
 <template>
-  <div class="star-rating" :class="{ 'star-rating--readonly': !editable }">
+  <div class="star-rating" :class="{ 'star-rating--readonly': !editable }" :title="`评分: ${modelValue}/${max}`">
     <button
       v-for="(filled, index) in stars"
       :key="index"
       type="button"
       :class="['star-rating__item', { filled }]"
       @click="handleSelect(index)"
+      :aria-label="`评分 ${index + 1}`"
     >
       ★
     </button>
+    <span v-if="modelValue > 0" class="star-rating__text">{{ modelValue }}/{{ max }}</span>
   </div>
 </template>
 

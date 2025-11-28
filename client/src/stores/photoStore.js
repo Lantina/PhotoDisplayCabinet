@@ -7,16 +7,44 @@ export const usePhotoStore = defineStore('photos', {
     selectedPhoto: null,
     loading: false,
     error: null,
+    page: 1,
+    pageSize: 20,
+    hasMore: true,
   }),
   actions: {
-    async fetchPhotos() {
+    async fetchPhotos(reset = false) {
+      if (reset) {
+        this.page = 1;
+        this.photos = [];
+        this.hasMore = true;
+      }
+
+      if (!this.hasMore) return;
+
       this.loading = true;
       this.error = null;
       try {
-        const response = await http.get('/photos');
+        const response = await http.get('/photos', {
+          params: {
+            page: this.page,
+            pageSize: this.pageSize,
+          },
+        });
         const data = response.data?.data || [];
-        this.photos = data;
+        const pagination = response.data?.pagination || {};
+
+        if (reset) {
+          this.photos = data;
+        } else {
+          this.photos = [...this.photos, ...data];
+        }
+
+        this.hasMore = pagination.totalPages ? this.page < pagination.totalPages : data.length === this.pageSize;
         this.selectedPhoto = null;
+
+        if (data.length > 0) {
+          this.page += 1;
+        }
       } catch (error) {
         this.error = error.response?.data?.message || error.message;
       } finally {
@@ -28,6 +56,13 @@ export const usePhotoStore = defineStore('photos', {
     },
     clearSelection() {
       this.selectedPhoto = null;
+    },
+    async loadMore() {
+      await this.fetchPhotos();
+    },
+    resetPagination() {
+      this.page = 1;
+      this.hasMore = true;
     },
     async uploadPhoto(formData) {
       this.loading = true;

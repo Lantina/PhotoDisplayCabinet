@@ -1,21 +1,37 @@
 <script setup>
+import { ref } from 'vue';
+import { useRouter } from 'vue-router';
 import { useAuthStore } from '../stores/authStore';
 import UploadForm from '../components/UploadForm.vue';
 import AdminLogin from '../components/AdminLogin.vue';
+import UserApproval from '../components/UserApproval.vue';
 
+const router = useRouter();
 const authStore = useAuthStore();
+const activeTab = ref('upload');
 
 const handleSuccess = () => {
   // 登录成功后会自动显示上传表单
+};
+
+const goToHome = () => {
+  router.push('/');
 };
 </script>
 
 <template>
   <div class="admin-page">
     <div class="admin-page__wrap">
-      <p class="admin-page__eyebrow">RESTRICTED AREA</p>
-      <h1>CAMARTS 管理入口</h1>
-      <p>仅持有此 URL 的管理员可访问，公众页面不会暴露入口。</p>
+      <div class="admin-header">
+        <div class="admin-header__content">
+          <p class="admin-page__eyebrow">RESTRICTED AREA</p>
+          <h1>PDCabinet 管理入口</h1>
+          <p>仅持有此 URL 的管理员可访问，公众页面不会暴露入口。</p>
+        </div>
+        <button class="btn btn--ghost admin-home-btn" @click="goToHome">
+          🏠 返回主页
+        </button>
+      </div>
 
       <div class="admin-card">
         <template v-if="authStore.isLoggedIn">
@@ -26,7 +42,32 @@ const handleSuccess = () => {
             </div>
             <button class="btn btn--ghost" @click="authStore.logout()">退出登录</button>
           </header>
-          <UploadForm />
+
+          <div class="admin-tabs">
+            <button
+              class="btn btn--ghost"
+              :class="{ 'is-active': activeTab === 'upload' }"
+              @click="activeTab = 'upload'"
+            >
+              上传管理
+            </button>
+            <button
+              class="btn btn--ghost"
+              :class="{ 'is-active': activeTab === 'users' }"
+              @click="activeTab = 'users'"
+            >
+              用户审核
+            </button>
+          </div>
+
+          <div class="tab-content">
+            <div v-if="activeTab === 'upload'">
+              <UploadForm />
+            </div>
+            <div v-if="activeTab === 'users'">
+              <UserApproval />
+            </div>
+          </div>
         </template>
         <template v-else>
           <AdminLogin @success="handleSuccess" />

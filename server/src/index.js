@@ -16,6 +16,8 @@ const allowedOrigins = process.env.CORS_ORIGIN
   ? process.env.CORS_ORIGIN.split(',').map((item) => item.trim())
   : ['http://localhost:5173'];
 
+console.log('[CORS] 允许的域名:', allowedOrigins);
+
 app.use(
   cors({
     origin(origin, callback) {

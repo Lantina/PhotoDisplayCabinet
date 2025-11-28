@@ -6,7 +6,7 @@ const {
   DB_PORT = '3306',
   DB_USER = 'root',
   DB_PASSWORD = '123456',
-  DB_NAME = 'camarts',
+  DB_NAME = 'pdcabinet',
   ADMIN_USERNAME = 'admin',
   ADMIN_PASSWORD = 'admin123',
 } = process.env;
@@ -61,6 +61,18 @@ async function ensureTables() {
       username VARCHAR(64) NOT NULL UNIQUE,
       password_hash VARCHAR(255) NOT NULL,
       created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+    ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
+  `);
+
+  await pool.query(`
+    CREATE TABLE IF NOT EXISTS users (
+      id INT AUTO_INCREMENT PRIMARY KEY,
+      username VARCHAR(64) NOT NULL UNIQUE,
+      email VARCHAR(255) NOT NULL UNIQUE,
+      password_hash VARCHAR(255) NOT NULL,
+      status ENUM('pending', 'approved', 'rejected') DEFAULT 'pending',
+      created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+      updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP
     ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
   `);
 

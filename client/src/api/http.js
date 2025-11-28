@@ -14,7 +14,7 @@ export const http = axios.create({
 });
 
 http.interceptors.request.use((config) => {
-  const token = localStorage.getItem('camarts_token');
+  const token = localStorage.getItem('pdcabinet_token');
   if (token) {
     config.headers.Authorization = `Bearer ${token}`;
   }

@@ -4,6 +4,9 @@ import * as exifr from 'exifr';
 import { usePhotoStore } from '../stores/photoStore';
 import StarRating from './StarRating.vue';
 
+// 添加成功提示状态
+const showSuccess = ref(false);
+
 const photoStore = usePhotoStore();
 
 const form = reactive({
@@ -105,18 +108,46 @@ const submit = async () => {
 
   const formData = new FormData();
   Object.entries(form).forEach(([key, value]) => {
-    if (value) formData.append(key, value);
+    // 特别处理rating字段，允许0值
+    if (key === 'rating' || value) {
+      formData.append(key, String(value));
+    }
   });
-  formData.append('rating', String(form.rating));
   formData.append('photo', file);
 
-  await photoStore.uploadPhoto(formData);
-  resetForm();
+  try {
+    await photoStore.uploadPhoto(formData);
+    // 显示成功提示
+    showSuccess.value = true;
+    // 3秒后开始淡出动画
+    setTimeout(() => {
+      const toast = document.querySelector('.success-toast');
+      if (toast) {
+        toast.style.animation = 'slideInRight 0.5s cubic-bezier(0.25, 0.46, 0.45, 0.94), fadeOut 0.5s ease-in-out forwards';
+      }
+    }, 2500);
+    // 3.5秒后完全隐藏
+    setTimeout(() => {
+      showSuccess.value = false;
+    }, 3500);
+    resetForm();
+  } catch (error) {
+    // 错误处理已在store中处理
+    console.error('上传失败:', error);
+  }
 };
 </script>
 
 <template>
   <form class="upload-form" @submit.prevent="submit">
+  <!-- 成功提示 -->
+  <div v-if="showSuccess" class="success-toast">
+    <div class="success-icon">✓</div>
+    <div class="success-content">
+      <h4>上传成功！</h4>
+      <p>您的作品已成功发布到画廊</p>
+    </div>
+  </div>
     <div class="upload-form__field">
       <label>作品标题</label>
       <input v-model="form.title" type="text" placeholder="作品名称" />

@@ -1,8 +1,8 @@
 import { defineStore } from 'pinia';
 import { http } from '../api/http';
 
-const TOKEN_KEY = 'camarts_token';
-const ADMIN_KEY = 'camarts_admin';
+const TOKEN_KEY = 'pdcabinet_token';
+const ADMIN_KEY = 'pdcabinet_admin';
 
 export const useAuthStore = defineStore('auth', {
   state: () => ({

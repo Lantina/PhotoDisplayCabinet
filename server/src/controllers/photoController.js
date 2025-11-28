@@ -1,6 +1,7 @@
 const fs = require('fs');
 const path = require('path');
 const exifr = require('exifr');
+const sharp = require('sharp');
 const photoService = require('../services/photoService');
 
 const uploadsDir = path.join(__dirname, '..', '..', 'uploads');
@@ -11,10 +12,65 @@ const ensureUploadsDir = () => {
   }
 };
 
+// 生成缩略图
+const generateThumbnail = async (inputPath, outputPath, width = 400) => {
+  try {
+    await sharp(inputPath)
+      .resize(width, null, {
+        withoutEnlargement: true,
+        kernel: sharp.kernel.lanczos3,
+      })
+      .jpeg({ quality: 85, progressive: true })
+      .toFile(outputPath);
+    return outputPath;
+  } catch (error) {
+    console.error('[Thumbnail] 生成失败:', error.message);
+    return null;
+  }
+};
+
+// 获取图片尺寸
+const getImageDimensions = async (filePath) => {
+  try {
+    const metadata = await sharp(filePath).metadata();
+    return {
+      width: metadata.width,
+      height: metadata.height,
+    };
+  } catch (error) {
+    console.error('[Image] 获取尺寸失败:', error.message);
+    return { width: null, height: null };
+  }
+};
+
 const getPhotos = async (req, res, next) => {
   try {
-    const photos = await photoService.listPhotos();
-    res.json({ data: photos });
+    const page = parseInt(req.query.page) || 1;
+    const pageSize = parseInt(req.query.pageSize) || 20;
+    const offset = (page - 1) * pageSize;
+
+    // 获取总数
+    const { pool } = require('../config/db');
+    const [countResult] = await pool.query('SELECT COUNT(*) as total FROM photos');
+    const total = countResult[0].total;
+
+    // 获取分页数据
+    const [rows] = await pool.query(
+      'SELECT * FROM photos ORDER BY created_at DESC LIMIT ? OFFSET ?',
+      [pageSize, offset]
+    );
+
+    const photos = rows.map(photoService.mapRowToPhoto);
+
+    res.json({
+      data: photos,
+      pagination: {
+        page,
+        pageSize,
+        total,
+        totalPages: Math.ceil(total / pageSize)
+      }
+    });
   } catch (error) {
     next(error);
   }
@@ -93,6 +149,18 @@ const createPhoto = async (req, res, next) => {
     const metadata = req.body;
     const exif = await extractExif(req.file.path);
 
+    // 获取图片真实尺寸
+    const dimensions = await getImageDimensions(req.file.path);
+
+    // 生成缩略图
+    const thumbnailFileName = `thumb-${req.file.filename}`;
+    const thumbnailPath = path.join(uploadsDir, thumbnailFileName);
+    const thumbnailGenerated = await generateThumbnail(req.file.path, thumbnailPath);
+
+    // 确定上传者身份（管理员或普通用户）
+    const uploader = req.user?.username || 'anonymous';
+    const userType = req.user?.type || 'admin'; // 'admin' 或 'user'
+
     const record = await photoService.insertPhoto({
       filename: req.file.filename,
       originalName: req.file.originalname,
@@ -102,11 +170,11 @@ const createPhoto = async (req, res, next) => {
       lens: metadata.lens || '',
       shotAt: metadata.shotAt || '',
       location: metadata.location || '',
-      width: metadata.width ? Number(metadata.width) : null,
-      height: metadata.height ? Number(metadata.height) : null,
+      width: dimensions.width || (metadata.width ? Number(metadata.width) : null),
+      height: dimensions.height || (metadata.height ? Number(metadata.height) : null),
       dominantColor: metadata.dominantColor || '',
       fileSize: req.file.size,
-      createdBy: req.user?.username || 'admin',
+      createdBy: uploader,
       manufacturer: metadata.manufacturer || exif.manufacturer || '',
       model: metadata.model || exif.model || '',
       takenAt: metadata.takenAt || exif.takenAt || null,
@@ -118,7 +186,30 @@ const createPhoto = async (req, res, next) => {
       rating: clampRating(metadata.rating),
     });
 
-    res.status(201).json({ data: record });
+    // 添加缩略图信息到返回数据
+    const result = {
+      ...record,
+      hasThumbnail: thumbnailGenerated !== null,
+      thumbnailUrl: thumbnailGenerated ? `/uploads/${thumbnailFileName}` : null,
+      uploadedBy: userType, // 返回上传者类型
+    };
+
+    res.status(201).json({
+      data: result,
+      message: userType === 'user' ? '照片上传成功，等待管理员审核' : '照片上传成功'
+    });
+  } catch (error) {
+    next(error);
+  }
+};
+
+const getPhotoById = async (req, res, next) => {
+  try {
+    const photo = await photoService.getPhotoById(req.params.id);
+    if (!photo) {
+      return res.status(404).json({ message: '照片不存在' });
+    }
+    res.json(photo);
   } catch (error) {
     next(error);
   }
@@ -131,10 +222,20 @@ const removePhoto = async (req, res, next) => {
       return res.status(404).json({ message: '照片不存在' });
     }
     await photoService.deletePhoto(photo.id);
+
+    // 删除原图
     const filePath = path.join(uploadsDir, photo.filename);
     fs.promises
       .unlink(filePath)
       .catch(() => {});
+
+    // 删除缩略图
+    const thumbnailFileName = `thumb-${photo.filename}`;
+    const thumbnailPath = path.join(uploadsDir, thumbnailFileName);
+    fs.promises
+      .unlink(thumbnailPath)
+      .catch(() => {});
+
     res.status(204).send();
   } catch (error) {
     next(error);
@@ -145,5 +246,6 @@ module.exports = {
   getPhotos,
   createPhoto,
   removePhoto,
+  getPhotoById,
 };
 
