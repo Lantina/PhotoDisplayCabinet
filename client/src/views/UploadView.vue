@@ -43,8 +43,8 @@ const handleFileSelect = (event) => {
     return;
   }
 
-  if (selectedFile.size > 50 * 1024 * 1024) {
-    error.value = '文件大小不能超过50MB';
+  if (selectedFile.size > 20 * 1024 * 1024) {
+    error.value = '文件大小不能超过20MB';
     return;
   }
 
@@ -191,7 +191,7 @@ onMounted(() => {
                 <label for="photo-upload" class="file-upload-label">
                   <div class="upload-icon">📷</div>
                   <p>点击选择图片或拖拽到此处</p>
-                  <p class="file-hint">支持 JPG、PNG、GIF 格式，最大 50MB</p>
+                  <p class="file-hint">支持 JPG、PNG、GIF 格式，最大 20MB</p>
                 </label>
               </div>
 

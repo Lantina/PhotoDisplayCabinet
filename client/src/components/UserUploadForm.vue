@@ -30,8 +30,8 @@ const handleFileSelect = (event) => {
     return;
   }
 
-  if (selectedFile.size > 50 * 1024 * 1024) {
-    error.value = '文件大小不能超过50MB';
+  if (selectedFile.size > 20 * 1024 * 1024) {
+    error.value = '文件大小不能超过20MB';
     return;
   }
 
@@ -138,7 +138,7 @@ const closeModal = () => {
             <div v-if="!file" class="upload-prompt">
               <div class="upload-icon">📷</div>
               <p>点击选择照片或拖拽到此处</p>
-              <p class="upload-hint">支持 JPG、PNG、GIF 格式，最大 50MB</p>
+              <p class="upload-hint">支持 JPG、PNG、GIF 格式，最大 20MB</p>
             </div>
             <div v-else class="file-preview">
               <img :src="previewUrl" alt="预览" />

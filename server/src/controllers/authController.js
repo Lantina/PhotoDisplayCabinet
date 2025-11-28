@@ -90,10 +90,7 @@ const userLogin = async (req, res, next) => {
       return res.status(401).json({ message: '账号或密码错误' });
     }
 
-    if (user.status === 'pending') {
-      return res.status(403).json({ message: '账号正在审核中，请等待管理员批准' });
-    }
-
+    // 允许pending和approved状态的用户登录，只有rejected状态不能登录
     if (user.status === 'rejected') {
       return res.status(403).json({ message: '账号已被拒绝，无法登录' });
     }

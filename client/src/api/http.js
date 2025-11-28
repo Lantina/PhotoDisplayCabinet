@@ -14,9 +14,14 @@ export const http = axios.create({
 });
 
 http.interceptors.request.use((config) => {
-  const token = localStorage.getItem('pdcabinet_token');
-  if (token) {
-    config.headers.Authorization = `Bearer ${token}`;
+  // 优先使用管理员 token，如果没有再使用用户 token
+  const adminToken = localStorage.getItem('pdcabinet_token');
+  const userToken = localStorage.getItem('pdcabinet_user_token');
+
+  if (adminToken) {
+    config.headers.Authorization = `Bearer ${adminToken}`;
+  } else if (userToken) {
+    config.headers.Authorization = `Bearer ${userToken}`;
   }
   return config;
 });
