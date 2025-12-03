@@ -95,7 +95,19 @@ const handleFileChange = async (event) => {
     preview.value = '';
     return;
   }
+
+  if (!file.type.startsWith('image/')) {
+    photoStore.error = '请选择图片文件';
+    return;
+  }
+
+  if (file.size > 20 * 1024 * 1024) {
+    photoStore.error = '文件大小不能超过20MB';
+    return;
+  }
+
   preview.value = URL.createObjectURL(file);
+  photoStore.error = '';
   await hydrateFromExif(file);
 };
 

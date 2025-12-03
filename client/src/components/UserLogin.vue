@@ -1,5 +1,5 @@
 <script setup>
-import { ref } from 'vue';
+import { ref, defineEmits } from 'vue';
 import { http } from '../api/http';
 
 const emit = defineEmits(['success', 'switch-to-register']);
@@ -28,8 +28,14 @@ const handleLogin = async () => {
       password: form.value.password
     });
 
-    emit('success', response.data);
+    // 检查响应数据结构
+    if (response.data && response.data.token && response.data.user) {
+      emit('success', response.data);
+    } else {
+      throw new Error('登录响应数据格式不正确');
+    }
   } catch (err) {
+    console.log('object :>> ', err);
     error.value = err.response?.data?.message || '登录失败，请重试';
   } finally {
     loading.value = false;

@@ -2,6 +2,7 @@
 import { ref } from 'vue';
 import { useRouter } from 'vue-router';
 import { useUserStore } from '../stores/userStore';
+import { http } from '../api/http';
 import UserLogin from '../components/UserLogin.vue';
 import UserRegister from '../components/UserRegister.vue';
 
@@ -10,8 +11,21 @@ const userStore = useUserStore();
 const activeTab = ref('login');
 
 const handleLoginSuccess = (data) => {
-  // 登录成功后跳转到主页
-  router.push('/');
+  console.log('登录成功，接收到的数据:', data);
+
+  // 登录成功后更新用户状态并跳转到主页
+  userStore.token = data.token;
+  userStore.user = data.user;
+  localStorage.setItem('pdcabinet_user_token', data.token);
+  localStorage.setItem('pdcabinet_user_info', JSON.stringify(data.user));
+
+  // 更新 axios 默认头部
+  http.defaults.headers.common['Authorization'] = `Bearer ${data.token}`;
+
+  // 延迟跳转，确保状态更新完成
+  setTimeout(() => {
+    router.push('/');
+  }, 100);
 };
 
 const handleRegisterSuccess = (data) => {
@@ -66,9 +80,7 @@ const switchTab = (tab) => {
         />
       </div>
 
-      <div class="auth-footer">
-        <p>管理员登录请访问 <router-link to="/admin" class="admin-link">管理后台</router-link></p>
-      </div>
+      <!-- 管理员登录入口已隐藏，只能通过直接输入URL访问 -->
     </div>
   </div>
 
@@ -117,11 +129,11 @@ const switchTab = (tab) => {
 
 .user-auth-container {
   width: 100%;
-  max-width: 400px;
+  max-width: 600px;
   background: rgba(5, 8, 20, 0.8);
   border: 1px solid rgba(255, 255, 255, 0.1);
   border-radius: 2rem;
-  padding: 3rem 2rem;
+  padding: 4rem 3rem;
   backdrop-filter: blur(10px);
   box-shadow: 0 20px 60px rgba(0, 0, 0, 0.5);
 }
@@ -133,11 +145,13 @@ const switchTab = (tab) => {
 
 .auth-header h1 {
   margin: 0 0 0.5rem 0;
-  font-size: 2rem;
+  font-size: 3rem;
+  font-weight: bold;
   background: linear-gradient(120deg, #ff6792, #715aff);
   -webkit-background-clip: text;
   -webkit-text-fill-color: transparent;
   background-clip: text;
+  letter-spacing: 1px;
 }
 
 .auth-header p {
