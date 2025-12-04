@@ -1,5 +1,9 @@
 const mysql = require('mysql2/promise');
 const bcrypt = require('bcryptjs');
+const { v4: uuidv4 } = require('uuid');
+
+// 生成UUID的辅助函数
+exports.generateUUID = () => uuidv4();
 
 const {
   DB_HOST = 'localhost',
@@ -37,7 +41,7 @@ async function ensureDatabase() {
 async function ensureTables() {
   await pool.query(`
     CREATE TABLE IF NOT EXISTS photos (
-      id INT AUTO_INCREMENT PRIMARY KEY,
+      id CHAR(36) NOT NULL PRIMARY KEY,
       filename VARCHAR(255) NOT NULL,
       original_name VARCHAR(255) NOT NULL,
       title VARCHAR(255),
@@ -57,7 +61,7 @@ async function ensureTables() {
 
   await pool.query(`
     CREATE TABLE IF NOT EXISTS admins (
-      id INT AUTO_INCREMENT PRIMARY KEY,
+      id CHAR(36) NOT NULL PRIMARY KEY,
       username VARCHAR(64) NOT NULL UNIQUE,
       password_hash VARCHAR(255) NOT NULL,
       created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
@@ -66,7 +70,7 @@ async function ensureTables() {
 
   await pool.query(`
     CREATE TABLE IF NOT EXISTS users (
-      id INT AUTO_INCREMENT PRIMARY KEY,
+      id CHAR(36) NOT NULL PRIMARY KEY,
       username VARCHAR(64) NOT NULL UNIQUE,
       email VARCHAR(255) NOT NULL UNIQUE,
       password_hash VARCHAR(255) NOT NULL,
@@ -141,7 +145,9 @@ async function ensureDefaultAdmin() {
   ]);
   if (rows.length === 0) {
     const hash = await bcrypt.hash(ADMIN_PASSWORD, 10);
-    await pool.query('INSERT INTO admins (username, password_hash) VALUES (?, ?)', [
+    const adminId = uuidv4(); // 生成UUID
+    await pool.query('INSERT INTO admins (id, username, password_hash) VALUES (?, ?, ?)', [
+      adminId,
       ADMIN_USERNAME,
       hash,
     ]);

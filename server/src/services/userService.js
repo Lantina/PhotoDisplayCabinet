@@ -1,17 +1,19 @@
 const { pool } = require('../config/db');
 const bcrypt = require('bcryptjs');
+const { v4: uuidv4 } = require('uuid');
 
 const createUser = async (username, email, password) => {
   const hashedPassword = await bcrypt.hash(password, 10);
+  const userId = uuidv4();
 
   try {
     const [result] = await pool.query(
-      'INSERT INTO users (username, email, password_hash) VALUES (?, ?, ?)',
-      [username, email, hashedPassword]
+      'INSERT INTO users (id, username, email, password_hash) VALUES (?, ?, ?, ?)',
+      [userId, username, email, hashedPassword]
     );
 
     return {
-      id: result.insertId,
+      id: userId,
       username,
       email,
       status: 'pending'

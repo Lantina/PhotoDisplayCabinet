@@ -1,7 +1,7 @@
 import axios from 'axios';
 
 const apiBase = (
-  import.meta.env.VITE_API_BASE || 'https://pdcabinetapi.pixris.online/api'
+  import.meta.env.VITE_API_BASE || 'http://localhost:4000/api'
 ).replace(/\/$/, '');
 
 const assetBase = (
@@ -10,7 +10,7 @@ const assetBase = (
 
 export const http = axios.create({
   baseURL: apiBase,
-  timeout: 15000,
+  timeout: 25000,
 });
 
 http.interceptors.request.use((config) => {

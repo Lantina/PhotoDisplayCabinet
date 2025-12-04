@@ -11,7 +11,19 @@
       "Bash(pkill:*)",
       "Bash(taskkill /F /IM node.exe:*)",
       "Bash(curl:*)",
-      "Bash(npm run build:*)"
+      "Bash(npm run build:*)",
+      "Bash(tree:*)",
+      "Bash(cat:*)",
+      "Bash(npm install)",
+      "Bash(wmic process:*)",
+      "Bash(npm install uuid --save)",
+      "Bash(npm start)",
+      "Bash(npm run test)",
+      "Bash(npm stop)",
+      "Bash(npm uninstall mysql2)",
+      "Bash(npm install mysql2)",
+      "Bash(find:*)",
+      "Bash(npm ls:*)"
     ],
     "deny": [],
     "ask": []

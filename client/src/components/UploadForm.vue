@@ -50,17 +50,19 @@ const formatDateInput = (value) => {
 const hydrateFromExif = async (file) => {
   extracting.value = true;
   try {
-    const data = await exifr.parse(file, [
-      'Make',
-      'Model',
-      'DateTimeOriginal',
-      'ModifyDate',
-      'ExposureTime',
-      'FNumber',
-      'ISO',
-      'FocalLength',
-      'LensModel',
-    ]);
+    const data = await exifr.parse(file, {
+      extract: [
+        'Make',
+        'Model',
+        'DateTimeOriginal',
+        'ModifyDate',
+        'ExposureTime',
+        'FNumber',
+        'ISO',
+        'FocalLength',
+        'LensModel',
+      ]
+    });
     if (!data) return;
     form.manufacturer = data.Make || form.manufacturer;
     form.model = data.Model || form.model;

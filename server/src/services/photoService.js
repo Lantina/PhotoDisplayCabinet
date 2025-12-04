@@ -1,4 +1,5 @@
 const { pool } = require('../config/db');
+const { v4: uuidv4 } = require('uuid');
 
 const mapRowToPhoto = (row) => {
   if (!row) return null;
@@ -39,10 +40,12 @@ async function listPhotos() {
 }
 
 async function insertPhoto(payload) {
+  const photoId = uuidv4(); // 生成UUID
   const sql = `INSERT INTO photos
-    (filename, original_name, title, description, camera, lens, shot_at, location, width, height, dominant_color, file_size, created_by, manufacturer, model, taken_at, exposure_time, aperture, iso, modified_at, focal_length, rating)
-    VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`;
+    (id, filename, original_name, title, description, camera, lens, shot_at, location, width, height, dominant_color, file_size, created_by, manufacturer, model, taken_at, exposure_time, aperture, iso, modified_at, focal_length, rating)
+    VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`;
   const params = [
+    photoId, // 添加UUID作为第一个参数
     payload.filename,
     payload.originalName,
     payload.title,
@@ -67,7 +70,7 @@ async function insertPhoto(payload) {
     payload.rating ?? 0,
   ];
   const [result] = await pool.query(sql, params);
-  return getPhotoById(result.insertId);
+  return getPhotoById(photoId);
 }
 
 async function getPhotoById(id) {

@@ -1,0 +1,40 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Test EXIFR</title>
+    <script src="https://unpkg.com/exifr@7.1.3/dist/exifr.js"></script>
+</head>
+<body>
+    <h1>EXIFR Test</h1>
+    <input type="file" id="fileInput" accept="image/*">
+    <div id="output"></div>
+
+    <script>
+        document.getElementById('fileInput').addEventListener('change', async (e) => {
+            const file = e.target.files[0];
+            const output = document.getElementById('output');
+
+            try {
+                // 测试旧的API方式 - 应该失败
+                output.innerHTML = '<p>测试旧的API方式...</p>';
+
+                // 正确的API方式
+                output.innerHTML += '<p>测试正确的API方式...</p>';
+                const exif = await exifr.parse(file, {
+                    extract: ['Make', 'Model', 'DateTimeOriginal', 'ExposureTime', 'FNumber', 'ISO', 'FocalLength', 'LensModel']
+                });
+
+                if (exif) {
+                    output.innerHTML += '<h2>EXIF信息：</h2>';
+                    output.innerHTML += '<pre>' + JSON.stringify(exif, null, 2) + '</pre>';
+                } else {
+                    output.innerHTML += '<p>没有找到EXIF信息</p>';
+                }
+
+            } catch (error) {
+                output.innerHTML += '<p style="color: red;">错误：' + error.message + '</p>';
+            }
+        });
+    </script>
+</body>
+</html>

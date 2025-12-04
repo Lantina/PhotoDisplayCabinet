@@ -106,16 +106,18 @@ const formatFocalLength = (value) => {
 
 const extractExif = async (filePath) => {
   try {
-    const data = await exifr.parse(filePath, [
-      'Make',
-      'Model',
-      'DateTimeOriginal',
-      'ModifyDate',
-      'ExposureTime',
-      'FNumber',
-      'ISO',
-      'FocalLength',
-    ]);
+    const data = await exifr.parse(filePath, {
+      extract: [
+        'Make',
+        'Model',
+        'DateTimeOriginal',
+        'ModifyDate',
+        'ExposureTime',
+        'FNumber',
+        'ISO',
+        'FocalLength',
+      ]
+    });
     if (!data) return {};
     return {
       manufacturer: data.Make || '',
