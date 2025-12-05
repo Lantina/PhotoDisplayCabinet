@@ -19,10 +19,18 @@ const emit = defineEmits(['select']);
 const imageLoadStatus = ref(new Map());
 const hoveredPhoto = ref(null);
 const gridColumns = ref([]);
+const isMobile = ref(window.innerWidth <= 768);
+
+// 监听窗口大小变化
+window.addEventListener('resize', () => {
+  isMobile.value = window.innerWidth <= 768;
+});
 
 // 瀑布流布局算法
 const createMasonryLayout = () => {
-  const columns = 4;
+  // 根据屏幕宽度确定列数，手机端为2列，其他为4列
+  const isMobile = window.innerWidth <= 768;
+  const columns = isMobile ? 2 : 4;
   const cols = Array(columns).fill(0);
   const result = Array(columns).fill(null).map(() => []);
 
@@ -62,6 +70,7 @@ const createMasonryLayout = () => {
       aspectRatio,
       imageUrl: buildImageUrl(photo.url || `/uploads/${photo.filename}`),
       thumbnailUrl: photo.thumbnailUrl ? buildImageUrl(photo.thumbnailUrl) : null,
+      compressedUrl: photo.compressedUrl ? buildImageUrl(photo.compressedUrl) : null,
     };
 
     result[minCol].push(photoData);
@@ -82,6 +91,7 @@ const handleImageLoad = (photoId) => {
 
 const handleImageError = (photoId) => {
   imageLoadStatus.value.set(photoId, 'error');
+  console.warn(`图片加载失败: ${photoId}`);
 };
 
 const handleMouseEnter = (photoId) => {
@@ -122,7 +132,7 @@ const masonryColumns = computed(() => createMasonryLayout());
         >
           <div class="image-container">
             <img
-              :src="photo.thumbnailUrl || photo.imageUrl"
+              :src="photo.compressedUrl || photo.thumbnailUrl"
               :alt="photo.title || photo.originalName"
               loading="lazy"
               @load="handleImageLoad(photo.id)"
@@ -133,10 +143,10 @@ const masonryColumns = computed(() => createMasonryLayout());
               <div class="loading-spinner"></div>
             </div>
 
-            <!-- 悬停时显示的高清图预加载 -->
+            <!-- 悬停时显示的压缩图预加载 -->
             <div v-if="hoveredPhoto === photo.id" class="hover-preview">
               <img
-                :src="photo.imageUrl"
+                :src="photo.compressedUrl || photo.thumbnailUrl"
                 loading="lazy"
                 alt=""
                 class="hover-preview-img"
@@ -144,7 +154,7 @@ const masonryColumns = computed(() => createMasonryLayout());
             </div>
 
             <!-- 悬停遮罩层 -->
-            <div v-if="hoveredPhoto === photo.id" class="hover-overlay">
+            <div v-if="hoveredPhoto === photo.id && !isMobile" class="hover-overlay">
               <div class="hover-content">
                 <h4 v-if="photo.title" class="photo-title">{{ photo.title }}</h4>
                 <p v-if="photo.camera" class="photo-camera">{{ photo.camera }}</p>

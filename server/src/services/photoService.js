@@ -1,9 +1,29 @@
 const { pool } = require('../config/db');
 const { v4: uuidv4 } = require('uuid');
+const fs = require('fs');
+const path = require('path');
+
+const uploadsDir = path.join(__dirname, '..', '..', 'uploads');
 
 const mapRowToPhoto = (row) => {
   if (!row) return null;
-  return {
+
+  // 动态生成压缩图和缩略图的URL
+  const compressedFileName = `compressed-${row.filename}`;
+  const thumbnailFileName = `thumb-${row.filename}`;
+
+  // 检查文件是否存在
+  const compressedPath = path.join(uploadsDir, compressedFileName);
+  const thumbnailPath = path.join(uploadsDir, thumbnailFileName);
+  const hasCompressed = fs.existsSync(compressedPath);
+  const hasThumbnail = fs.existsSync(thumbnailPath);
+
+  // 调试日志
+  console.log(`[mapRowToPhoto] 处理文件: ${row.filename}`);
+  console.log(`[mapRowToPhoto] 压缩图路径: ${compressedPath}, 存在: ${hasCompressed}`);
+  console.log(`[mapRowToPhoto] 缩略图路径: ${thumbnailPath}, 存在: ${hasThumbnail}`);
+
+  const result = {
     id: row.id,
     filename: row.filename,
     originalName: row.original_name,
@@ -29,7 +49,15 @@ const mapRowToPhoto = (row) => {
     focalLength: row.focal_length,
     rating: row.rating || 0,
     url: `/uploads/${row.filename}`,
+    // 动态生成压缩图和缩略图信息
+    hasCompressed,
+    compressedUrl: hasCompressed ? `/uploads/${compressedFileName}` : null,
+    hasThumbnail,
+    thumbnailUrl: hasThumbnail ? `/uploads/${thumbnailFileName}` : null,
   };
+
+  console.log(`[mapRowToPhoto] 返回结果包含 compressedUrl: ${!!result.compressedUrl}`);
+  return result;
 };
 
 async function listPhotos() {

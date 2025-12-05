@@ -7,4 +7,5 @@ server/uploads
 server/src/uploads
 server/.env
 client/.env
+/.claude
 

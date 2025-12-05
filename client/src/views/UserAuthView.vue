@@ -82,26 +82,27 @@ const switchTab = (tab) => {
 
       <!-- 管理员登录入口已隐藏，只能通过直接输入URL访问 -->
     </div>
-  </div>
 
-  <!-- 页脚版权信息 -->
-  <footer class="site-footer">
-    <div class="footer-content">
-      <p>
-        © 2025
-        <a href="https://pixris.online" target="_blank" rel="noopener noreferrer" class="footer-link">
-          Pixris
-        </a>
-        . All rights reserved.
-      </p>
-    </div>
-  </footer>
+    <!-- 页脚版权信息 -->
+    <footer class="site-footer">
+      <div class="footer-content">
+        <p>
+          © 2025
+          <a href="https://pixris.online" target="_blank" rel="noopener noreferrer" class="footer-link">
+            Pixris
+          </a>
+          . All rights reserved.
+        </p>
+      </div>
+    </footer>
+  </div>
 </template>
 
 <style scoped>
 .user-auth-page {
   min-height: 100vh;
   display: flex;
+  flex-direction: column;
   align-items: center;
   justify-content: center;
   background: radial-gradient(circle at 15% 30%, rgba(255, 78, 162, 0.15), transparent 60%),
@@ -207,14 +208,13 @@ const switchTab = (tab) => {
 
 /* 页脚样式 */
 .site-footer {
-  position: absolute;
-  bottom: 0;
-  left: 0;
-  right: 0;
   padding: 1.5rem 0;
   background: rgba(5, 8, 20, 0.3);
   border-top: 1px solid rgba(255, 255, 255, 0.1);
   backdrop-filter: blur(5px);
+  width: 100%;
+  margin-top: auto;
+  flex-shrink: 0;
 }
 
 .footer-content {

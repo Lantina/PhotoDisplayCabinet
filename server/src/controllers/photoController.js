@@ -29,6 +29,23 @@ const generateThumbnail = async (inputPath, outputPath, width = 400) => {
   }
 };
 
+// 生成高度压缩的展示图（用于首页）
+const generateCompressedImage = async (inputPath, outputPath, width = 1200) => {
+  try {
+    await sharp(inputPath)
+      .resize(width, null, {
+        withoutEnlargement: true,
+        kernel: sharp.kernel.lanczos3,
+      })
+      .jpeg({ quality: 60, progressive: true })
+      .toFile(outputPath);
+    return outputPath;
+  } catch (error) {
+    console.error('[Compressed] 生成失败:', error.message);
+    return null;
+  }
+};
+
 // 获取图片尺寸
 const getImageDimensions = async (filePath) => {
   try {
@@ -45,6 +62,7 @@ const getImageDimensions = async (filePath) => {
 
 const getPhotos = async (req, res, next) => {
   try {
+    console.log('[getPhotos] API 被调用');
     const page = parseInt(req.query.page) || 1;
     const pageSize = parseInt(req.query.pageSize) || 20;
     const offset = (page - 1) * pageSize;
@@ -60,7 +78,18 @@ const getPhotos = async (req, res, next) => {
       [pageSize, offset]
     );
 
+    console.log('[getPhotos] 查询到数据行数:', rows.length);
+
     const photos = rows.map(photoService.mapRowToPhoto);
+
+    console.log('[getPhotos] 映射完成，照片数:', photos.length);
+    if (photos.length > 0) {
+      console.log('[getPhotos] 第一张照片:', {
+        filename: photos[0].filename,
+        hasCompressed: photos[0].hasCompressed,
+        compressedUrl: photos[0].compressedUrl
+      });
+    }
 
     res.json({
       data: photos,
@@ -72,6 +101,7 @@ const getPhotos = async (req, res, next) => {
       }
     });
   } catch (error) {
+    console.error('[getPhotos] 错误:', error);
     next(error);
   }
 };
@@ -159,6 +189,11 @@ const createPhoto = async (req, res, next) => {
     const thumbnailPath = path.join(uploadsDir, thumbnailFileName);
     const thumbnailGenerated = await generateThumbnail(req.file.path, thumbnailPath);
 
+    // 生成高度压缩的展示图（用于首页）
+    const compressedFileName = `compressed-${req.file.filename}`;
+    const compressedPath = path.join(uploadsDir, compressedFileName);
+    const compressedGenerated = await generateCompressedImage(req.file.path, compressedPath);
+
     // 确定上传者身份（管理员或普通用户）
     const uploader = req.user?.username || 'anonymous';
     const userType = req.user?.type || 'admin'; // 'admin' 或 'user'
@@ -188,11 +223,13 @@ const createPhoto = async (req, res, next) => {
       rating: clampRating(metadata.rating),
     });
 
-    // 添加缩略图信息到返回数据
+    // 添加缩略图和压缩图信息到返回数据
     const result = {
       ...record,
       hasThumbnail: thumbnailGenerated !== null,
       thumbnailUrl: thumbnailGenerated ? `/uploads/${thumbnailFileName}` : null,
+      hasCompressed: compressedGenerated !== null,
+      compressedUrl: compressedGenerated ? `/uploads/${compressedFileName}` : null,
       uploadedBy: userType, // 返回上传者类型
     };
 
@@ -236,6 +273,13 @@ const removePhoto = async (req, res, next) => {
     const thumbnailPath = path.join(uploadsDir, thumbnailFileName);
     fs.promises
       .unlink(thumbnailPath)
+      .catch(() => {});
+
+    // 删除压缩图
+    const compressedFileName = `compressed-${photo.filename}`;
+    const compressedPath = path.join(uploadsDir, compressedFileName);
+    fs.promises
+      .unlink(compressedPath)
       .catch(() => {});
 
     res.status(204).send();

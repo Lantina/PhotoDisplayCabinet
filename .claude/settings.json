@@ -1,0 +1,15 @@
+// {
+//   "hooks": {
+//     "PreToolUse": [
+//       {
+//         "matcher": "Read|Write|Edit|Glob|mcp__acp__Read|mcp__acp__Write|mcp__acp__Edit|NotebookEdit",
+//         "hooks": [
+//           {
+//             "type": "command",
+//             "command": "pwsh -NoProfile -ExecutionPolicy Bypass -File \"%USERPROFILE%\\.claude\\hooks\\PathValidation.ps1\""
+//           }
+//         ]
+//       }
+//     ]
+//   }
+// }

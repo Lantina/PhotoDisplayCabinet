@@ -1,6 +1,7 @@
 <script setup>
 import { ref, computed, onMounted } from 'vue';
 import { useRouter } from 'vue-router';
+import * as exifr from 'exifr';
 import { http } from '../api/http';
 import { useUserStore } from '../stores/userStore';
 import { useAuthStore } from '../stores/authStore';
@@ -28,11 +29,74 @@ const previewUrl = ref('');
 const loading = ref(false);
 const error = ref('');
 const success = ref(false);
+const extracting = ref(false);
 
 // 检查权限
 const hasPermission = computed(() => {
   return authStore.isLoggedIn || userStore.isLoggedIn;
 });
+
+const formatDateInput = (value) => {
+  if (!value) return '';
+  const date = new Date(value);
+  if (Number.isNaN(date.getTime())) return '';
+  return date.toISOString().slice(0, 16);
+};
+
+const hydrateFromExif = async (file) => {
+  extracting.value = true;
+  try {
+    const data = await exifr.parse(file, {
+      extract: [
+        'Make',
+        'Model',
+        'DateTimeOriginal',
+        'ModifyDate',
+        'ExposureTime',
+        'FNumber',
+        'ISO',
+        'FocalLength',
+        'LensModel',
+      ]
+    });
+    if (!data) return;
+
+    // 格式化EXIF数据并填充到表单
+    form.value.camera = data.Model || form.value.camera;
+    form.value.lens = data.LensModel || form.value.lens;
+    form.value.takenAt = formatDateInput(data.DateTimeOriginal) || form.value.takenAt;
+
+    // 格式化曝光时间
+    if (data.ExposureTime) {
+      if (typeof data.ExposureTime === 'number') {
+        form.value.exposureTime = data.ExposureTime >= 1
+          ? `${data.ExposureTime}s`
+          : `1/${Math.round(1 / data.ExposureTime)}`;
+      } else {
+        form.value.exposureTime = data.ExposureTime;
+      }
+    }
+
+    // 格式化光圈
+    if (data.FNumber) {
+      form.value.aperture = `f/${Number(data.FNumber).toFixed(1).replace(/\.0$/, '')}`;
+    }
+
+    // 格式化ISO
+    if (data.ISO) {
+      form.value.iso = String(data.ISO);
+    }
+
+    // 格式化焦距
+    if (data.FocalLength) {
+      form.value.focalLength = `${Number(data.FocalLength).toFixed(1).replace(/\.0$/, '')}mm`;
+    }
+  } catch (err) {
+    console.warn('EXIF解析失败:', err);
+  } finally {
+    extracting.value = false;
+  }
+};
 
 const handleFileSelect = (event) => {
   const selectedFile = event.target.files[0];
@@ -57,11 +121,19 @@ const handleFileSelect = (event) => {
     previewUrl.value = e.target.result;
   };
   reader.readAsDataURL(selectedFile);
+
+  // 解析EXIF信息并填充表单
+  hydrateFromExif(selectedFile);
 };
 
 const handleUpload = async () => {
   if (!file.value) {
     error.value = '请选择图片文件';
+    return;
+  }
+
+  if (!form.value.title.trim()) {
+    error.value = '请填写作品标题';
     return;
   }
 
@@ -194,6 +266,7 @@ onMounted(() => {
                   <p class="file-hint">支持 JPG、PNG、GIF 格式，最大 20MB</p>
                 </label>
               </div>
+              <p v-if="extracting" style="margin-top: 1rem; color: rgba(255, 255, 255, 0.6); font-size: 0.9rem;">正在读取EXIF信息...</p>
 
               <div v-else class="file-preview">
                 <img :src="previewUrl" alt="预览" />
@@ -206,13 +279,14 @@ onMounted(() => {
             <!-- 表单字段 -->
             <div class="form-fields">
               <div class="form-group">
-                <label for="title">作品标题</label>
+                <label for="title">作品标题<span class="required">*</span></label>
                 <input
                   id="title"
                   v-model="form.title"
                   type="text"
                   placeholder="给作品起个标题"
                   class="form-input"
+                  required
                 />
               </div>
 
@@ -415,7 +489,8 @@ onMounted(() => {
 }
 
 .upload-page__content {
-  flex: 1;
+  flex: 1 0 auto;
+  width: 100%;
   padding: 2rem 0;
 }
 
@@ -635,12 +710,13 @@ onMounted(() => {
 
 /* 页脚样式 */
 .site-footer {
-  margin-top: auto;
   padding: 2rem 0;
   background: rgba(5, 8, 20, 0.4);
   border-top: 1px solid rgba(255, 255, 255, 0.1);
   backdrop-filter: blur(10px);
   width: 100%;
+  margin-top: auto;
+  flex-shrink: 0;
 }
 
 .footer-content {
@@ -665,6 +741,11 @@ onMounted(() => {
 
 .footer-link:hover {
   color: #ff4d7c;
+}
+
+.required {
+  color: #ff6792;
+  margin-left: 0.25rem;
 }
 
 @media (max-width: 768px) {
